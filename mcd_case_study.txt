@@ -1,0 +1,300 @@
+import pandas as pd
+import numpy as np
+
+pd.read_csv() or pd.read_excel() 
+segmentation_data = mcdonalds.iloc[:, :11]
+segmentation_matrix = segmentation_data.values
+yes_matrix = segmentation_matrix == 'Yes'
+
+# Convert TRUE to 1 and FALSE to 0
+numeric_matrix = yes_matrix.astype(int)
+average_values = np.mean(numeric_matrix, axis=0)
+print("Average values for transformed segmentation variables:")
+print(average_values)
+
+
+from sklearn.decomposition import PCA
+segmentation matrix named MD_x
+pca = PCA()
+MD_pca_result = pca.fit_transform(MD_x) 
+print("Importance of components:")
+print(pd.DataFrame({
+    'Standard deviation': pca.explained_variance_,
+    'Proportion of Variance': pca.explained_variance_ratio_,
+    'Cumulative Proportion': pca.explained_variance_ratio_.cumsum()
+}, index=[f'PC{i+1}' for i in range(MD_x.shape[1])]))
+
+
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+ segmentation matrix named MD_x
+pca = PCA()
+MD_pca_result = pca.fit_transform(MD_x)
+projected_data = pca.transform(MD_x)
+plt.scatter(projected_data[:, 0], projected_data[:, 1], color='grey') 
+for i, feature in enumerate(segmentation_data.columns):
+    plt.arrow(0, 0, pca.components_[0, i], pca.components_[1, i], color='red', head_width=0.05, head_length=0.05)
+    plt.text(pca.components_[0, i], pca.components_[1, i], feature, color='red')
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.title('Projected Data with Original Segmentation Variables')
+plt.show()
+
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from stability_selection import StabilitySelection
+
+np.random.seed(1234)
+MD_x = pd.DataFrame(np.random.rand(100, 10), columns=['feature_{}'.format(i) for i in range(10)])
+def perform_kmeans(data, n_clusters):
+    kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=1234)
+    labels = kmeans.fit_predict(data)
+    return labels
+nrep = 10
+
+segmentations = {}
+for n_segments in range(2, 9):
+    labels_list = [perform_kmeans(MD_x, n_segments) for _ in range(nrep)]
+    segmentations[n_segments] = labels_list
+stability_selection = StabilitySelection()
+stability_scores = stability_selection.fit(np.array(list(segmentations.values())))
+optimal_segments = np.argmax(stability_scores) + 2  # +2 because the loop starts from 2
+print("Optimal number of segments:", optimal_segments)
+
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.utils import resample
+from sklearn.metrics import adjusted_rand_score
+import matplotlib.pyplot as plt
+
+np.random.seed(1234)
+MD_x = pd.DataFrame(np.random.rand(100, 10), columns=['feature_{}'.format(i) for i in range(10)])
+def perform_kmeans(data, n_clusters):
+    kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=1234)
+    labels = kmeans.fit_predict(data)
+    return labels 
+
+def  calculate_stability(labels1, labels2):
+    return adjusted_rand_score(labels1, labels2)
+nrep = 10
+nboot = 100
+
+segment_stabilities = []
+for n_segments in range(2, 9):
+    bootstrap_stabilities = []
+    for _ in range(nboot):
+      
+        bootstrap_sample = resample(MD_x, random_state=1234) 
+        labels_sample = perform_kmeans(bootstrap_sample, n_segments)
+   labels_original = perform_kmeans(MD_x, n_segments) 
+        stability = calculate_stability(labels_original, labels_sample) bootstrap_stabilities.append(stability)   segment_stabilities.append(bootstrap_stabilities)
+plt.boxplot(segment_stabilities, labels=range(2, 9), vert=False)
+plt.xlabel("Number of Segments")
+plt.ylabel("Adjusted Rand Index")
+plt.title("Global Stability Analysis")
+plt.show()
+
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.utils import resample
+from sklearn.metrics import adjusted_rand_score
+from yellowbrick.cluster import SlsVisualizer
+np.random.seed(1234)
+MD_x = pd.DataFrame(np.random.rand(100, 10), columns=['feature_{}'.format(i) for i in range(10)])
+def perform_kmeans(data, n_clusters):
+    kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=1234)
+    labels = kmeans.fit_predict(data)
+    return labels
+def calculate_stability(labels1, labels2):
+    return adjusted_rand_score(labels1, labels2)
+nrep = 10
+nboot = 100
+segment_stabilities = []
+for n_segments in range(2, 9):
+    bootstrap_stabilities = []
+    for _ in range(nboot):
+      
+        bootstrap_sample = resample(MD_x, random_state=1234) 
+        labels_sample = perform_kmeans(bootstrap_sample, n_segments) 
+        labels_original = perform_kmeans(MD_x, n_segments) 
+        stability = calculate_stability(labels_original, labels_sample)
+        bootstrap_stabilities.append(stability) segment_stabilities.append(bootstrap_stabilities) 
+selected_solution = 4
+MD_k4 = perform_kmeans(MD_x, selected_solution)
+
+visualizer = SlsVisualizer(model=KMeans(n_clusters=selected_solution, n_init=10, random_state=1234))
+visualizer.fit(MD_x)
+visualizer.show()
+
+import numpy as np
+import pandas as pd
+from mixtools import MixModel
+from sklearn.cluster import KMeans
+
+k_range = range(2, 9)
+n_restarts = 10
+
+aic_values = []
+bic_values = []
+icl_values = []
+
+for k in k_range:
+    mix_model = MixModel(data['MD.x'].values.reshape(-1, 1), n_components=k, n_init=n_restarts)
+    aic_values.append(mix_model.aic())
+    bic_values.append(mix_model.bic())
+    icl_values.append(mix_model.icl())
+
+print("AIC values:", aic_values)
+print("BIC values:", bic_values)
+print("ICL values:", icl_values) 
+import matplotlib.pyplot as plt
+
+plt.plot(k_range, aic_values, label='AIC')
+plt.plot(k_range, bic_values, label='BIC')
+plt.plot(k_range, icl_values, label='ICL')
+plt.xlabel('Number of Segments')
+plt.ylabel('Value of Information Criteria')
+plt.legend()
+plt.show()
+
+# Choose the number of segments based on the plot (e.g., 4 segments)
+chosen_segments = 4
+
+final_mix_model = MixModel(data['MD.x'].values.reshape(-1, 1), n_components=chosen_segments, n_init=n_restarts)
+kmeans = KMeans(n_clusters=chosen_segments, random_state=1234)
+data['kmeans_clusters'] = kmeans.fit_predict(data['MD.x'].values.reshape(-1, 1))
+
+cross_tab = pd.crosstab(data['kmeans_clusters'], final_mix_model.predict(), margins=True)
+print(cross_tab)
+
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+ dat is named 'Like.n', an
+mcdonalds['Like.n'] = 6 - pd.to_numeric(mcdonalds['Like'])
+
+independent_variables = mcdonalds.columns[1:12]
+formula = 'Like.n ~ ' + ' + '.join(independent_variables) 
+
+model = sm.OLS.from_formula(formula, data=mcdonalds)
+result = model.fit()
+
+print(result.summary())
+
+plt.figure(figsize=(10, 6))
+coefs = result.params.drop('Intercept')
+pvalues = result.pvalues.drop('Intercept')
+significance = pvalues < 0.05  
+
+colors = ['grey' if sig else 'lightgrey' for sig in significance]
+error_bars = [result.conf_int()[0], result.conf_int()[1]]
+
+coefs.plot(kind='bar', color=colors, yerr=error_bars, capsize=5)
+plt.xlabel('Independent Variables')
+plt.ylabel('Coefficient Value')
+plt.title('Regression Coefficients with Significance')
+plt.show()
+
+
+import numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+MD_x = data[['Attribute1', 'Attribute2', 'Attribute3', '...']]
+
+scaler = StandardScaler()
+MD_x_scaled = scaler.fit_transform(MD_x)
+
+ clustering with k=4
+kmeans = KMeans(n_clusters=4, random_state=42)
+MD_k4 = kmeans.fit_predict(MD_x_scaled) 
+plt.figure(figsize=(10, 6))
+for i in range(4):
+    plt.bar(range(len(MD_x.columns)), MD_x.iloc[MD_k4 == i].mean(), alpha=0.7, label=f'Segment {i+1}')
+
+plt.xticks(range(len(MD_x.columns)), MD_x.columns, rotation=45)
+plt.legend()
+plt.title('Segment Profile Plot')
+plt.show()
+
+pca = PCA(n_components=2)
+MD_pca = pca.fit_transform(MD_x_scaled)
+
+plt.figure(figsize=(8, 8))
+for i in range(4):
+    plt.scatter(MD_pca[MD_k4 == i, 0], MD_pca[MD_k4 == i, 1], label=f'Segment {i+1}')
+
+centers = kmeans.cluster_centers_
+plt.scatter(centers[:, 0], centers[:, 1], c='black', marker='o', s=200, alpha=0.7, label='Segment Centers')
+
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.legend()
+plt.title('Segment Separation Plot')
+plt.show()
+
+import pandas as pd
+import seaborn as sns
+import plotly.express as px
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
+
+mosaic_df = pd.crosstab(mcdonalds['Segment'], pd.cut(mcdonalds['Like.n'], bins=[-float('inf'), 0, float('inf')], labels=['Hate', 'Love']))
+plt.figure(figsize=(8, 6))
+sns.heatmap(mosaic_df, annot=True, cmap='coolwarm', fmt='d', cbar=False)
+plt.xlabel('Loving or Hating McDonald’s')
+plt.ylabel('Segment Number')
+plt.title('Mosaic Plot - Association between Segment Membership and Loving or Hating McDonald’s')
+plt.show()
+
+gender_mosaic_df = pd.crosstab(mcdonalds['Segment'], mcdonalds['Gender'])
+plt.figure(figsize=(8, 6))
+sns.heatmap(gender_mosaic_df, annot=True, cmap='coolwarm', fmt='d', cbar=False)
+plt.title('Mosaic Plot - Gender Distribution across Segments')
+plt.show()
+
+ Parallel Box-and-Whisker Plot
+plt.figure(figsize=(8, 6))
+sns.boxplot(x='Segment', y='Age', data=mcdonalds, notch=True, var_width=True)
+plt.title('Association of Age with Segment Membership')
+plt.show()
+X = mcdonalds[['Like.n', 'Age', 'VisitFrequency', 'Gender']]
+y = (mcdonalds['Segment'] == 3).astype(int)  # Binary classification for Segment 3 membership
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+tree = DecisionTreeClassifier()
+tree.fit(X_train, y_train)
+
+fig = px.plot_tree(tree, feature_names=X.columns, class_names=['Not Segment 3', 'Segment 3'])
+fig.show()
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+visit_mean = mcdonalds.groupby('Segment')['VisitFrequency'].mean()
+like_mean = mcdonalds.groupby('Segment')['Like.n'].mean()
+female_percentage = mcdonalds.groupby('Segment')['Gender'].apply(lambda x: (x == 'Female').mean()) 
+plt.figure(figsize=(10, 8))
+sns.scatterplot(x=visit_mean, y=like_mean, size=female_percentage * 10, sizes=(50, 200), hue=visit_mean.index)
+ enumerate(visit_mean.index):
+    plt.annotate(txt, (visit_mean[i], like_mean[i]), textcoords="offset points", xytext=(0, 5), ha='center')
+
+plt.xlim(2, 4.5)
+plt.ylim(-3, 3)
+
+plt.xlabel('Visit Frequency')
+plt.ylabel('Liking McDonald’s')
+plt.title('Segment Evaluation Plot')
+plt.legend(title='Segment', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+plt.show()
